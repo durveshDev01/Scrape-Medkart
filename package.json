@@ -1,0 +1,17 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "serve": "nodemon server.mjs"
+  },
+  "author": "durveshDev01",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cherio": "^1.0.0-rc.2",
+    "express": "^4.21.2",
+    "nodemon": "^3.1.7"
+  }
+}
