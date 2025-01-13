@@ -2,12 +2,11 @@ import axios from "axios";
 import cherio from "cherio";
 
 // url - https://www.medkart.in/order-medicine/paracetamol-500mg-tablet-20s
-
 // fuction to scrape
 async function scrapeProd(medId) {
 
   // url to scrape
-  let baseUrl = "https://www.medkart.in"
+  let baseUrl = "https://www.medkart.in/order-medicine/"
   let medicineUrl = baseUrl + medId;
   // web response
   let res = await axios.get(medicineUrl);
@@ -33,13 +32,16 @@ async function scrapeProd(medId) {
   let price = productDisplayCard
     .find('span[class^="ProductDisplay_current_price"]')
     .text();
-  // display card -> saving
-  let yourSaving = $('td[class^="ProductSummary_line_height_3"]').find().text();
   // about product
-  let about = $('ul[class^="ProductDescription_lists"]')
-    .find("li")
-    .map((_idx, li) => {
-      return $(li).text().trim();
+  let about = $('div[class^="card"]')
+    .map((_idx, card) => {
+      let title = $(card).find('h2').text();
+      let detail = $(card).find('li').map((_idx, det) => {
+        return $(det).text().trim();
+      }).get();
+      let retdata = {};
+      retdata[title] = detail;
+      return retdata; 
     })
     .get();
 
@@ -49,7 +51,6 @@ async function scrapeProd(medId) {
     contains: contains,
     mrp: mrp,
     price: price,
-    yourSaving: yourSaving,
     about: about,
     imageUrl: baseUrl + imageUrl,
   };

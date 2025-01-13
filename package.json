@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "serve": "nodemon server.mjs"
+    "dev": "nodemon server.js"
   },
   "author": "durveshDev01",
   "license": "ISC",
