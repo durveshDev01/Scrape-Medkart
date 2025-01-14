@@ -3,7 +3,7 @@ import {scrapeProd, scrapeSearch} from './scrape.mjs';
 
 const app = express();
 
-app.get('/get-meds/:id', async (req, res) => {
+app.get('/get-meds/search=:id', async (req, res) => {
     res.json(await scrapeSearch(req.params.id));
 })
 
