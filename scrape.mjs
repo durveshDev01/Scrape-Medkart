@@ -1,14 +1,6 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import puppeteer from 'puppeteer';
 
-import base64 from "base-64";
-
-// url - https://www.medkart.in/order-medicine/paracetamol-500mg-tablet-20s
-// fuction to scrape
-
-const browser = await puppeteer.launch();
-const page = await browser.newPage();
 
 async function searchMedplus(medId) {
 
@@ -43,40 +35,8 @@ async function searchMedplus(medId) {
     };
   }).get();
 
-  console.log(products)
 };
 
-// async function search_netmeds(medId) {
-
-//   // url to scrape
-//   let baseUrl = "https://www.netmeds.com/"
-//   let medicineUrl = baseUrl + "catalogsearch/result/" + medId + "/all";
-
-//   // web response
-//   await page.goto(medicineUrl);
-
-//   // loading in cheerio
-//   let cards = await page.locator('ais-InfiniteHits-item');
-//   let products = cards.map((_idx, card) => {
-//     let $card = $(card);
-//     console.log(_idx)
-//     let medicine_path = $card.find('a[class="category_name"]').attr("href");
-//     let med_image = $card.find('img').attr("src");
-//     let med_manufacturer = $card.find('span[class="drug-varients ellipsis"]').text();
-//     let med_name = $card.find('h3[class="clsgetname"]').find('span').text();
-//     let med_mrp = $card.find('span[class="final-price"]').text();
-
-//     return {
-//       path: medicine_path,
-//       image: med_image,
-//       manufacturer: med_manufacturer,
-//       name: med_name,
-//       mrp: med_mrp
-//     };
-//   }).get();
-
-//   console.log(products)
-// };
 
 async function searchPharmeasy(query) {
   let res = await axios.get("https://pharmeasy.in/search/all?name=" + query);
@@ -98,7 +58,7 @@ async function searchPharmeasy(query) {
     let off = $card.find('span[class^="ProductCard_gcdDiscountPercent"]').text();
 
     return {
-      med_path: "https://pharmeasy.in" + medicine_path,
+      med_path: medicine_path,
       med_image: med_image,
       med_name: medicine_name,
       medicine_unit: medicine_unit,
@@ -108,8 +68,46 @@ async function searchPharmeasy(query) {
       med_off: off,
     };
   }).get();
-  console.log(details);
+
   return details;
 }
 
-export { searchPharmeasy, searchMedplus };
+async function scrapePharmeasy(uri) {
+  let res = await axios.get("https://pharmeasy.in/online-medicine-order/" + uri);
+  let $ = cheerio.load(res.data);
+  
+  let rows = $('table[class^="DescriptionTable_seoTable"]').find('tr');
+
+  let details = rows.map((_idx, row) => {
+    let $row = $(row);
+    let key = $row.find('td[class^="DescriptionTable_field"]').text();
+    let value = $row.find('td[class^="DescriptionTable_value"]').text();
+
+    return {
+      [key]: value
+    };
+  }).get();
+  
+  let alternate = $('div[class^="OtherVariants_root"]').find("li").map((_idx, li) => {
+    let $li = $(li);
+    let name = $li.text();
+    let link = "https://pharmeasy.in" + $li.find('a').attr("href");
+
+    return {
+      name: name,
+      link: link
+    }
+  }).get();
+
+  let disclaimer = $('div[class^="Disclaimer_content"]').text();
+
+  return {
+    details: details,
+    alternate: alternate,
+    disclaimer: disclaimer
+  }
+}
+
+// scrapePharmeasy("https://pharmeasy.in/online-medicine-order/dolopar-strip-of-15-tablets-19887")
+
+export { searchPharmeasy, scrapePharmeasy, searchMedplus };
