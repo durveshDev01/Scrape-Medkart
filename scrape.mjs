@@ -2,40 +2,48 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 
 
-async function searchMedplus(medId) {
+async function searchMedkart(medId) {
 
   // url to scrape
-  let baseUrl = "https://www.medplusmart.com/"
-  let medicineUrl = baseUrl + "searchAll/" + base64.encode("A::"+medId);
-  console.log(medicineUrl);
+  let baseUrl = "https://www.medkart.in/search/all?name=";
+  let medicineUrl = baseUrl + medId;
 
   // web response
   let res = await axios.get(medicineUrl);
   // loading in cheerio
   let $ = cheerio.load(res.data);
   // scrapping display card
-  let searchres = $("section");
-  let productDisplayCards = searchres.find('div[class*="search-all-products"]');
+  let searchres = $('div[class^="MedicineList_listWrapper"]');
+  let productDisplayCards = searchres.find('div[class*="listing-card"]');
   let products = productDisplayCards.map((_idx, card) => {
     
     let $card = $(card);
-    console.log(_idx)
-    let medicine_path = $card.find('a[role="link"]').attr("href");
-    let med_image = $card.find('img').attr("src");
-    let med_manufacturer = $card.find('p[class="font-12 text-secondary mb-1 text-truncate"]').text();
-    let med_name = $card.find('h6[class="truncate-line-2"]').find('span').text();
-    let med_mrp = $card.find('h6[class="mb-0"]').text();
+
+    let medicine_path = $card.find('a').attr("href");
+    let med_image = $card.find('a').find('img').attr("src");
+    let med_info = $card.find('div[class^="ListingCard_med"]');
+    let med_name = med_info.find('h3').text();
+    let med_manufacturer = med_info.find('h4').text();
+    let med_price = $card.find('div[class*="ListingCard_pricing"]');
+    let price = med_price.find('h3').text();
+    let mrp = med_price.find('h4').text();
+    let discount = med_price.find('h5').text();
 
     return {
       path: medicine_path,
       image: med_image,
-      manufacturer: med_manufacturer,
       name: med_name,
-      mrp: med_mrp
+      manifacturer: med_manufacturer,
+      mrp: mrp,
+      price: price,
+      discount: discount
     };
   }).get();
 
+  return products;
+
 };
+
 
 
 async function searchPharmeasy(query) {
@@ -58,22 +66,23 @@ async function searchPharmeasy(query) {
     let off = $card.find('span[class^="ProductCard_gcdDiscountPercent"]').text();
 
     return {
-      med_path: medicine_path,
-      med_image: med_image,
-      med_name: medicine_name,
-      medicine_unit: medicine_unit,
-      med_brand: med_brand,
-      medicine_mrp: medicine_mrp,
-      med_price: price.replace(off, ''),
-      med_off: off,
+      path: medicine_path,
+      image: med_image,
+      name: medicine_name,
+      unit: medicine_unit,
+      manifacturer: med_brand,
+      mrp: medicine_mrp,
+      price: price.replace(off, ''),
+      discount: off,
     };
   }).get();
+
 
   return details;
 }
 
 async function scrapePharmeasy(uri) {
-  let res = await axios.get("https://pharmeasy.in/online-medicine-order/" + uri);
+  let res = await axios.get("https://pharmeasy.in/" + uri);
   let $ = cheerio.load(res.data);
   
   let rows = $('table[class^="DescriptionTable_seoTable"]').find('tr');
@@ -108,6 +117,31 @@ async function scrapePharmeasy(uri) {
   }
 }
 
+// scrapePharmeasy("/online-medicine-order/dolo-250mg-susp-44136").then((res) => {
+//   console.log(res);
+// })
+
+// TODO: Complete scrapeMedkart
+async function scrapeMedkart(uri) {
+  let res = await axios.get("https://www.medkart.in/" + uri);
+  let $ = cheerio.load(res.data);
+  
+  let rows = $('table[class="undefined table table-striped"]').find('tr');
+
+  let details = rows.map((_idx, row) => {
+    let $row = $(row);
+    let key = $row.find('th').text();
+    let value = $row.find('td').text();
+
+    return {
+      [key]: value
+    };
+  }).get();
+
+  return details;
+}
+
+// searchPharmeasy("paraxin-500mg-capsule-10s");
 // scrapePharmeasy("https://pharmeasy.in/online-medicine-order/dolopar-strip-of-15-tablets-19887")
 
-export { searchPharmeasy, scrapePharmeasy, searchMedplus };
+export { searchPharmeasy, scrapePharmeasy, searchMedkart, scrapeMedkart };
