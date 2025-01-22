@@ -85,6 +85,7 @@ app.get('/auth', async (req, res) => {
 
 app.get('/search', async (req, res) => {
   let meds = await compareSearch(req.query.term);
+  console.log(meds);
   if (meds.length > 0) 
     res.render('searchpage.ejs', {meds: meds});
   else 
@@ -93,17 +94,14 @@ app.get('/search', async (req, res) => {
 
 
 
-app.get('/order-medicine/:id', async (req, res) => {
-  let med = await searchMedkart(req.params.id);
-  med = med[0];
-  compareSearch(med.name).then(async (meds) => {
-    meds = meds[0];
-    let mdk = await scrapeMedkart(meds.mdk.path);
-    let phe = await scrapePharmeasy(meds.phe.path);
-    console.log(mdk)
-    console.log(phe)
-    res.render('productpage.ejs', {meds: meds, mdk: mdk, phe: phe});
-  })
+app.post('/order-medicine/:id', async (req, res) => {
+  let data = req.body.medData;
+  let med = JSON.parse(data);
+  let phe = await scrapePharmeasy(med.phe.path);
+  let mdk = await scrapeMedkart(med.mdk.path);
+  // console.log(phe);
+  console.log(mdk);
+  res.render('productpage.ejs', {med: med, mdk: mdk, phe: phe});
 
 })
 
