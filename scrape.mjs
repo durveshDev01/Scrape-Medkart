@@ -62,7 +62,8 @@ async function searchPharmeasy(query) {
     let medicine_unit = $card.find('div[class^="ProductCard_measurementUnit"]').text();
     let med_brand = $card.find('div[class^="ProductCard_brandName"]').text();
     let medicine_mrp = $card.find('div[class^="ProductCard_priceContainer"]').find('span[class^="ProductCard_striked"]').text();
-    let price = $card.find('div[class^="ProductCard_gcdDiscountContainer"]').text();
+    let _price = $card.find('div[class^="ProductCard_gcdDiscountContainer"]').text()
+    let price = (_price) != ''? _price : $card.find('div[class^="ProductCard_ourPrice"]').text().replace('MRP ₹', '').replace('*', '');
     let off = $card.find('span[class^="ProductCard_gcdDiscountPercent"]').text();
 
     return {
