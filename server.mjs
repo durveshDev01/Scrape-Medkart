@@ -66,7 +66,7 @@ app.post('/signin', async (req, res) => {
 
 
 app.get('/', async (req, res) => {
-  let med = await searchMedkart("TABLET");
+  let med = await searchPharmeasy("TABLET");
   // console.log(req.session);
   res.render('home.ejs', {med: med, user: req.session.user});
 })
@@ -82,9 +82,9 @@ app.get('/auth', async (req, res) => {
 app.get('/search', async (req, res) => {
   let meds = await compareSearch(req.query.term);
   if (meds.length > 0) 
-    res.render('searchpage.ejs', {meds: meds});
+    res.render('searchpage.ejs', {meds: meds, user: req.session.user});
   else 
-    res.render('searchpage.ejs', {meds: [{name: "No results found", manifacturer: "", price: "", discount: "", path: ""}]});
+    res.render('searchpage.ejs', {meds: [{name: "No results found", manifacturer: "", price: "", discount: "", path: ""}], user: req.session.user});
 })
 
 app.get('/logout', async (req, res) => {
@@ -98,7 +98,7 @@ app.post('/order-medicine/:id', async (req, res) => {
   let phe = await scrapePharmeasy(med.phe.path);
   let mdk = await scrapeMedkart(med.mdk.path);
   // console.log(phe);
-  res.render('productpage.ejs', {med: med, mdk: mdk, phe: phe});
+  res.render('productpage.ejs', {med: med, mdk: mdk, phe: phe, user: req.session.user});
 
 })
 
