@@ -3,11 +3,12 @@ import { scrapeMedkart, scrapePharmeasy, searchMedkart, searchPharmeasy } from '
 import ejs from 'ejs';
 import { createHash } from 'crypto';
 import {User} from './config.js';
-import session from 'express-session';
 import cookieParser from 'cookie-parser';
-import { compareSearch, compareProd } from './compare.mjs';
+import { compareSearch } from './compare.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
+import sessionConfig from './sessionConfig.js'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -21,18 +22,10 @@ app.use(express.urlencoded({ extended: true })); // For URL-encoded payloads
 app.set('views', path.join(__dirname, 'ASEP-Frontend-FY'));
 app.use('/static', express.static(path.join(__dirname + '/ASEP-Frontend-FY/static')));
 app.use(cookieParser());
-app.use(session({
-  secret: "durvesh",
-  saveUninitialized: true,
-  resave: true
-}));
-
-
+app.use(sessionConfig);
 
 app.post('/signup', async (req, res) => {
-  console.log(req.body);
   let { user, email, signupPassword, confirmPassword } = req.body;
-  console.log(user, email, signupPassword, confirmPassword);
   if (user = await User.findOne({ email: email })) res.render('login.ejs', {
     alertbox: "Email already exists"
   })
@@ -41,8 +34,10 @@ app.post('/signup', async (req, res) => {
   });
   else if (typeof (email) != undefined && typeof (user != undefined)) {
     user = await User({ email: email, name: user, password: createHash('sha256').update(signupPassword).digest('hex'), address: null }).save();
-    req.session.user = user;
-    req.session.email = email;
+    req.session.user = {name: user, email: email};
+    await req.session.save((err) => {
+      if (err) console.log(err);
+    })
     res.redirect('/')
   }
 })
@@ -50,12 +45,13 @@ app.post('/signup', async (req, res) => {
 
 
 app.post('/signin', async (req, res) => {
-  User.find({ email: req.body.email }).then((user) => {
+  User.find({ email: req.body.email }).then(async (user) => {
     if (user) {
-      console.log(user);
       if (createHash('sha256').update(req.body.password).digest('hex') == user[0].password ){
-        req.session.user = user.user;
-        req.session.email = user.email;
+        req.session.user = {name: user[0].user, email: user[0].email};
+        await req.session.save((err) => {
+          if (err) console.log(err);
+        })
         res.redirect('/');
       }
       else {
@@ -70,9 +66,9 @@ app.post('/signin', async (req, res) => {
 
 
 app.get('/', async (req, res) => {
-  let med = await searchPharmeasy("TABLET");
-  console.log(med);
-  res.render('home.ejs', {med: med});
+  let med = await searchMedkart("TABLET");
+  // console.log(req.session);
+  res.render('home.ejs', {med: med, user: req.session.user});
 })
 
 
@@ -85,14 +81,16 @@ app.get('/auth', async (req, res) => {
 
 app.get('/search', async (req, res) => {
   let meds = await compareSearch(req.query.term);
-  console.log(meds);
   if (meds.length > 0) 
     res.render('searchpage.ejs', {meds: meds});
   else 
     res.render('searchpage.ejs', {meds: [{name: "No results found", manifacturer: "", price: "", discount: "", path: ""}]});
 })
 
-
+app.get('/logout', async (req, res) => {
+  req.session.destroy();
+  res.redirect('/');
+})
 
 app.post('/order-medicine/:id', async (req, res) => {
   let data = req.body.medData;
@@ -100,7 +98,6 @@ app.post('/order-medicine/:id', async (req, res) => {
   let phe = await scrapePharmeasy(med.phe.path);
   let mdk = await scrapeMedkart(med.mdk.path);
   // console.log(phe);
-  console.log(mdk);
   res.render('productpage.ejs', {med: med, mdk: mdk, phe: phe});
 
 })
