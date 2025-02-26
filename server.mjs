@@ -2,7 +2,7 @@ import express from 'express';
 import { scrapeMedkart, scrapePharmeasy, searchMedkart, searchPharmeasy } from './scrape.mjs';
 import ejs from 'ejs';
 import { createHash } from 'crypto';
-import {User} from './config.js';
+import {User, agenda} from './config.js';
 import cookieParser from 'cookie-parser';
 import { compareSearch } from './compare.mjs';
 import path from 'path';
@@ -11,7 +11,6 @@ import session from 'express-session';
 import sessionConfig from './sessionConfig.js'
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 let user;
 
 const app = express();
@@ -24,7 +23,7 @@ app.use('/static', express.static(path.join(__dirname + '/ASEP-Frontend-FY/stati
 app.use(cookieParser());
 app.use(sessionConfig);
 
-app.post('/signup', async (req, res) => {
+app.post('/signup', async (req, res) => { //Signup
   let { user, email, signupPassword, confirmPassword } = req.body;
   if (user = await User.findOne({ email: email })) res.render('login.ejs', {
     alertbox: "Email already exists"
@@ -44,7 +43,7 @@ app.post('/signup', async (req, res) => {
 
 
 
-app.post('/signin', async (req, res) => {
+app.post('/signin', async (req, res) => { //SignIn
   User.find({ email: req.body.email }).then(async (user) => {
     if (user) {
       if (createHash('sha256').update(req.body.password).digest('hex') == user[0].password ){
@@ -102,9 +101,21 @@ app.post('/order-medicine/:id', async (req, res) => {
 
 })
 
+app.get("/reminder",async(req, res) => {
+  res.render("reminder.ejs", {});
+})
 
-
-
+app.post("/setReminder", async(req, res) => {
+  const {medicine, email, datetime} = req.body;
+  if(!medicine || !email || !datetime){
+    return res.status(400).render("reminder.ejs", {message: "All fields are required!"});
+  }
+  const time = new Date(datetime);
+  console.log(time);
+  await agenda.schedule(time, "Sent Medication Reminder", {email, medicine, datetime});
+  console.log(await agenda.jobs())
+  res.render("reminder.ejs", { message: "Reminder scheduled successfully!" });
+})
 
 app.get('/get/pharmeasy/:id', async (req, res) => {
   res.json(await searchPharmeasy(req.params.id));
