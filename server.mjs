@@ -136,3 +136,25 @@ app.get('/info/medkart/order-medicine/:id', async (req, res) => {
 
 
 app.listen(3000, () => console.log('Server started on port http://localhost:3000'));
+
+
+
+app.get('/features', (req, res) => {
+  res.render('features', { user: req.user }); // Assuming you are passing user data
+});
+
+app.get('/features', (req, res) => {
+  res.render('map', { user: req.user }); // Assuming you are passing user data
+});
+
+// Add this code to your existing server.mjs file
+
+// Route for the contact page
+app.get('/contact', (req, res) => {
+  res.render('contact', { user: req.session.user }); // Render the contact.ejs file
+});
+
+// Correct the route for the map page
+app.get('/map', (req, res) => {
+  res.render('map', { user: req.session.user }); // Render the mare.ejs file
+});
